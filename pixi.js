@@ -82,7 +82,7 @@ const mask = new PIXI.Graphics();
 app.stage.addChild(mask);
 app.stage.mask = mask;
 
-// 🔥 REAL RESPONSIVE RESIZE
+// REAL RESPONSIVE RESIZE
 
 function resize() {
   const w = window.innerWidth;
