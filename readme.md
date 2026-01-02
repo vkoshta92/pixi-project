@@ -41,5 +41,19 @@ It demonstrates player movement, particle effects, pointer interactions, filters
 - WebGL / Canvas (via PixiJS)
 
 ---
+## 🛠️ Tech Stack
+
+- JavaScript
+- PixiJS (CDN)
+- WebGL / Canvas (via PixiJS)
+
+---
+## 🌐 Live Demo
+
+👉 **Live Demo:**  
+https://cool-zabaione-b650d3.netlify.app/
+
+
+---
 
 
