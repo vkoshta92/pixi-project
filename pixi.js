@@ -43,13 +43,16 @@ window.addEventListener("keyup", (e) => (keys[e.key] = false));
 
 // PARTICLES
 const particles = [];
-const MAX_PARTICLES = 150;
+const MAX_PARTICLES = 120;
+
+function removeParticle(p, index) {
+  app.stage.removeChild(p);
+  p.destroy();             
+  particles.splice(index, 1);
+}
 
 function createParticle(x, y) {
-  if (particles.length > MAX_PARTICLES) {
-    const old = particles.shift();
-    app.stage.removeChild(old);
-  }
+  if (particles.length >= MAX_PARTICLES) return;
 
   const p = new PIXI.Graphics();
   p.beginFill(0xffcc00).drawCircle(0, 0, 4).endFill();
@@ -64,7 +67,6 @@ function createParticle(x, y) {
 }
 
 // CLICK
-
 app.stage.hitArea = new PIXI.Rectangle();
 
 app.stage.on("pointerdown", (e) => {
@@ -77,56 +79,39 @@ app.stage.on("pointerdown", (e) => {
 });
 
 // MASK
-
 const mask = new PIXI.Graphics();
 app.stage.addChild(mask);
 app.stage.mask = mask;
-
-// REAL RESPONSIVE RESIZE
 
 function resize() {
   const w = window.innerWidth;
   const h = window.innerHeight;
 
-  // Renderer resize (IMPORTANT)
   app.renderer.resize(w, h);
 
-  // Hit area update
   app.stage.hitArea.width = w;
   app.stage.hitArea.height = h;
 
-  // Background resize
   background.width = w;
   background.height = h;
 
-  // Player center on first load only
-  if (!player._placed) {
-    player.x = w / 2;
-    player.y = h / 2;
-    player._placed = true;
-  }
-
-  // Player scale responsive
+  player.x = w / 2;
+  player.y = h / 2;
   const scale = Math.min(w, h) / 600;
-  player.scale.set(scale);
+  player.scale.set(player.scale.x < 0 ? -scale : scale);
 
-  // UI text
   counterText.x = 20;
   counterText.y = 20;
 
   const radius = Math.min(w, h) / 2.5;
-
   mask.clear();
-  mask.beginFill(0xffffff);
-  mask.drawCircle(0, 0, radius);
-  mask.endFill();
-
+  mask.beginFill(0xffffff).drawCircle(0, 0, radius).endFill();
   mask.x = w / 2;
   mask.y = h / 2;
 }
 
 window.addEventListener("resize", resize);
-resize(); // initial call
+resize();
 
 // GAME LOOP
 app.ticker.add(() => {
@@ -158,9 +143,7 @@ app.ticker.add(() => {
   player.x = Math.max(0, Math.min(app.screen.width, player.x));
   player.y = Math.max(0, Math.min(app.screen.height, player.y));
 
-  if (moving) {
-    createParticle(player.x, player.y);
-  }
+  if (moving) createParticle(player.x, player.y);
 
   blurFilter.blur = moving ? 4 : 2;
 
@@ -168,13 +151,9 @@ app.ticker.add(() => {
     const p = particles[i];
     p.x += p.vx;
     p.y += p.vy;
+
     if (--p.life <= 0) {
-      app.stage.removeChild(p);
-      particles.splice(i, 1);
+      removeParticle(p, i);
     }
   }
-
-  // // Mask follows player
-  // mask.x = player.x;
-  // mask.y = player.y;
 });
