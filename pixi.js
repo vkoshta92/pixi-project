@@ -1,6 +1,5 @@
 // APP SETUP (Responsive)
 const app = new PIXI.Application({
-  resizeTo: window,
   backgroundColor: 0x000000,
   antialias: true,
 });
@@ -9,40 +8,21 @@ document.body.appendChild(app.view);
 
 // Enable interaction
 app.stage.eventMode = "static";
-app.stage.hitArea = app.screen;
 
 // SCROLLING BACKGROUND
 const bgTexture = PIXI.Texture.from(
   "https://pixijs.io/examples/examples/assets/bg_grass.jpg"
 );
 
-const background = new PIXI.TilingSprite(
-  bgTexture,
-  app.screen.width,
-  app.screen.height
-);
-
+const background = new PIXI.TilingSprite(bgTexture);
 app.stage.addChild(background);
-
-// Resize background
-window.addEventListener("resize", () => {
-  background.width = app.screen.width;
-  background.height = app.screen.height;
-});
-
 
 // PLAYER
 const player = PIXI.Sprite.from(
   "https://pixijs.io/examples/examples/assets/bunny.png"
 );
-
 player.anchor.set(0.5);
-player.x = app.screen.width / 2;
-player.y = app.screen.height / 2;
-player.scale.set(1.2);
-
 app.stage.addChild(player);
-
 
 // ADVANCED: FILTER (Blur)
 const blurFilter = new PIXI.filters.BlurFilter(2);
@@ -50,19 +30,14 @@ player.filters = [blurFilter];
 
 // UI TEXT
 let clickCount = 0;
-
 const counterText = new PIXI.Text("Clicks: 0", {
   fill: "#ffffff",
   fontSize: 22,
 });
-
-counterText.x = 20;
-counterText.y = 20;
 app.stage.addChild(counterText);
 
 // KEYBOARD INPUT
 const keys = {};
-
 window.addEventListener("keydown", (e) => (keys[e.key] = true));
 window.addEventListener("keyup", (e) => (keys[e.key] = false));
 
@@ -77,10 +52,7 @@ function createParticle(x, y) {
   }
 
   const p = new PIXI.Graphics();
-  p.beginFill(0xffcc00);
-  p.drawCircle(0, 0, 4);
-  p.endFill();
-
+  p.beginFill(0xffcc00).drawCircle(0, 0, 4).endFill();
   p.x = x;
   p.y = y;
   p.vx = (Math.random() - 0.5) * 2;
@@ -91,7 +63,10 @@ function createParticle(x, y) {
   particles.push(p);
 }
 
-// CLICK / TAP EXPLOSION
+// CLICK
+
+app.stage.hitArea = new PIXI.Rectangle();
+
 app.stage.on("pointerdown", (e) => {
   clickCount++;
   counterText.text = `Clicks: ${clickCount}`;
@@ -101,32 +76,73 @@ app.stage.on("pointerdown", (e) => {
   }
 });
 
-// ADVANCED: MASK (Circular)
-const mask = new PIXI.Graphics();
-mask.beginFill(0xffffff);
-mask.drawCircle(0, 0, 220);
-mask.endFill();
+// MASK
 
+const mask = new PIXI.Graphics();
 app.stage.addChild(mask);
 app.stage.mask = mask;
 
+// 🔥 REAL RESPONSIVE RESIZE
+
+function resize() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  // Renderer resize (IMPORTANT)
+  app.renderer.resize(w, h);
+
+  // Hit area update
+  app.stage.hitArea.width = w;
+  app.stage.hitArea.height = h;
+
+  // Background resize
+  background.width = w;
+  background.height = h;
+
+  // Player center on first load only
+  if (!player._placed) {
+    player.x = w / 2;
+    player.y = h / 2;
+    player._placed = true;
+  }
+
+  // Player scale responsive
+  const scale = Math.min(w, h) / 600;
+  player.scale.set(scale);
+
+  // UI text
+  counterText.x = 20;
+  counterText.y = 20;
+
+  const radius = Math.min(w, h) / 2.5;
+
+  mask.clear();
+  mask.beginFill(0xffffff);
+  mask.drawCircle(0, 0, radius);
+  mask.endFill();
+
+  mask.x = w / 2;
+  mask.y = h / 2;
+}
+
+window.addEventListener("resize", resize);
+resize(); // initial call
+
 // GAME LOOP
 app.ticker.add(() => {
-  // Background scroll
   background.tilePosition.x -= 1;
 
   let moving = false;
   const speed = 5;
 
-  // Movement
   if (keys["ArrowLeft"] || keys["a"]) {
     player.x -= speed;
-    player.scale.x = -1.2;
+    player.scale.x = -Math.abs(player.scale.x);
     moving = true;
   }
   if (keys["ArrowRight"] || keys["d"]) {
     player.x += speed;
-    player.scale.x = 1.2;
+    player.scale.x = Math.abs(player.scale.x);
     moving = true;
   }
   if (keys["ArrowUp"] || keys["w"]) {
@@ -142,28 +158,23 @@ app.ticker.add(() => {
   player.x = Math.max(0, Math.min(app.screen.width, player.x));
   player.y = Math.max(0, Math.min(app.screen.height, player.y));
 
-  // Particle trail
   if (moving) {
     createParticle(player.x, player.y);
   }
 
-  // Animate filter
   blurFilter.blur = moving ? 4 : 2;
 
-  // Update particles
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx;
     p.y += p.vy;
-    p.life--;
-
-    if (p.life <= 0) { // memory clean
+    if (--p.life <= 0) {
       app.stage.removeChild(p);
       particles.splice(i, 1);
     }
   }
 
-  // Mask follows player
-  mask.x = player.x;
-  mask.y = player.y;
+  // // Mask follows player
+  // mask.x = player.x;
+  // mask.y = player.y;
 });
