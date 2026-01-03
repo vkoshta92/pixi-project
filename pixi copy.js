@@ -47,7 +47,7 @@ const MAX_PARTICLES = 120;
 
 function removeParticle(p, index) {
   app.stage.removeChild(p);
-  p.destroy();             
+  p.destroy();              // 🔥 IMPORTANT MEMORY CLEAN
   particles.splice(index, 1);
 }
 
@@ -60,13 +60,14 @@ function createParticle(x, y) {
   p.y = y;
   p.vx = (Math.random() - 0.5) * 2;
   p.vy = (Math.random() - 0.5) * 2;
-  p.life = 30; // kitne frame rhega
+  p.life = 30;
 
   app.stage.addChild(p);
   particles.push(p);
 }
 
 // CLICK
+
 app.stage.hitArea = new PIXI.Rectangle();
 
 app.stage.on("pointerdown", (e) => {
@@ -79,6 +80,7 @@ app.stage.on("pointerdown", (e) => {
 });
 
 // MASK
+
 const mask = new PIXI.Graphics();
 app.stage.addChild(mask);
 app.stage.mask = mask;
@@ -113,7 +115,9 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
+// ================================
 // GAME LOOP
+// ================================
 app.ticker.add(() => {
   background.tilePosition.x -= 1;
 
@@ -147,12 +151,13 @@ app.ticker.add(() => {
 
   blurFilter.blur = moving ? 4 : 2;
 
-  for (let i = particles.length - 1; i >= 0; i--) { // particle remove without index breaking
+  // Particle update (reverse loop = safe remove)
+  for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x += p.vx; // random direction de rhe h
+    p.x += p.vx;
     p.y += p.vy;
 
-    if (--p.life <= 0) { // frame km ho rhi h 0 hone pr destroy krna h
+    if (--p.life <= 0) {
       removeParticle(p, i);
     }
   }
